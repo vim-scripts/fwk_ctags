@@ -1,0 +1,340 @@
+*fwk_ctags.txt*   Manage your ctags configurations simple and efficent.
+                Copyright (c) 2010-2012 Sergey Vakulenko
+                License:      GPL
+
+                                                                     *fwk_ctags*
+
+INTRODUCTION                    |fwk_ctags_introduction|
+INSTALLATION                    |fwk_ctags_installation|
+USAGE                           |fwk_ctags_usage|
+GLOBAL VARIABLES                |fwk_ctags_variables|
+FUNCTIONS                       |fwk_ctags_func|
+EXEMPLES                        |fwk_ctags_exemples|
+FAQ                             |fwk_ctags_faq|
+CHANGES                         |fwk_ctags_changes|
+
+
+==============================================================================
+INTRODUCTION                                            *fwk_ctags_introduction*
+
+This plugin was conceived to unify and generalize your vim / ctags interaction.
+
+look the video tutorial like introduction:
+
+http://www.youtube.com/watch?v=GBaT3n8CTK8
+
+==============================================================================
+INSTALLATION                                            *fwk_ctags_installation*
+
+Pre-requirements~
+- ctags must be installed in your machine.
+- popup menus not works in vim console (but hot maps works!)
+
+Just drop files in zip archive to your vimfiles(win32) or .vim (linux/ubuntu),
+or your custom path.
+
+Then, customize your cfg file ( looks section EXEMPLES for more information).
+
+Finnaly, set |g:fwk_ctags_config_to_load| variable in your vimrc. On start, plugin 
+will read this variable to load configuration path with tags:
+
+>
+    let g:fwk_ctags_config_to_load = 'path/to/configuration_file.cfg'
+>
+
+Plugin files~
+doc/fwk_ctags.txt
+plugin/fwk_ctags.vim
+plugin/ctags_config_sample.cfg
+
+
+==============================================================================
+USAGE                                                          *fwk_ctags_usage*
+
+Using *fwk_ctags* , You can create your configuration file with all ctags projects and then,
+switch between them.
+
+Benefits of plugin:
+ - You generalize you ctags configurations for different languages
+    (Python, C++, Java, Ruby, ...) in one config file.
+    
+ - You can switch between ctags projects with maps or popup menus (simplest way!)
+
+ - You can create simple single configuration as create few configurations,
+   which will be used dependly from |hostname()| or platform names (|win32|, |linux|).
+
+ - you can refresh/update your config with ctags in real time, no need restart. 
+   After refresh, plugin collect new maps/menus and remove olds ones.
+
+ - you can browse ctags config in real time.
+
+ - When you change your current ctags project, plugin remove previous tags
+   path, but not touch preseted tags paths ( |g:fwk_ctags_default_tags| ).
+
+ - To make generation more faster, plugin create an tag file for each path: 
+   In case when path wasnt modified, generation for this path will be skipped
+   (you will feel difference in big project).
+                                    
+
+
+
+Format of a project in Configuration file~
+
+{ProjectName} {
+    map:{MapCombination}
+    
+    gen:{directoryToGeneratePath1}
+    gen:{directoryToGeneratePath2}
+    gen:{directoryToGeneratePath...N}
+    ...
+    set:{directoryToSetPath1}
+    set:{directoryToSetPath2}
+    set:{directoryToSetPath...N}
+    ...
+    pref:{SpecialCtagsOptions1}
+    pref:{SpecialCtagsOptions2}
+    pref:{SpecialCtagsOptions...N}
+}
+
+Real exemple of configuration file:~
+Python Django AppEngine ppdlive {
+    map:\tp
+    set:/usr/lib/python2.7/dist-packages/django
+    gen:/home/sergey/workspace/appEngine/vppdlive/ppdlive
+}
+
+
+Here:
+"Python Django AppEngine ppdlive" is {ProjectName}.
+"map" is {MapCombination}.
+"set" is {directoryToSetPath}.
+"gen" is {directoryToGeneratePath}.
+
+
+Syntax explainations:~
+
+{ProjectName}    - this is name of your project. Can contain spaces. {ProjectName}
+will be uses as description in popup menu.
+
+{MapCombination} - this is root prefix of your hotkey. Finnaly for this project,
+you will got combinations two combinations:
+{MapCombination}1 to generate tags for project.
+{MapCombination}2 to set tags for project.
+
+Exemple for {MapCombination}:
+We set {MapCombination} to \tg. Finnaly, we will got maps:
+\tg1    to generate tags
+\tg2    to set tags
+
+Tip: you can omit {MapCombination}, if you use only menus.
+
+
+{directoryToGeneratePath} - In project this is path for which need to generate tags.
+You can set theses variables as many as you want. 
+
+{directoryToSetPath}      - This is path which need to add to |tags| path of vim.
+You can set theses variables as many you want. 
+
+{SpecialCtagsOptions}     - this is help special instructions for ctags:
+advanced options, to make ctags parse better.
+For exemple, you can add regex rules to parse objective c code, like described
+in this page http://www.gregsexton.org/2011/04/objective-c-exuberant-ctags-regex .
+In |fwk_ctags_exemples| , we demonstrate how can be used this option.
+
+
+Exemple: {directoryToGeneratePath} you can generate tags for your new/updated sources and {directoryToSetPath}
+ for connect tags paths of big projects (core library headers).
+
+Tip: one 'set' or 'gen' option must be set in project configuration
+( otherwise, there is no sense in project configuration ).
+
+Tip2: All {directoryToGeneratePath} paths will be added automaticly to list of {directoryToSetPath}.
+
+Tip3: All rules {SpecialCtagsOptions} is ctags native.
+Look 'man ctags' for more information. 
+
+
+
+
+==============================================================================
+GLOBAL VARIABLES                                           *fwk_ctags_variables*
+
+
+Must be set!~
+|g:fwk_ctags_config_to_load|        Path to fwk_ctags cfg to load. 
+                                  Must be set to run plugin.
+Possible values: ~
+variable not set                - execution of plugin will be skipped.
+variable was set, with cfg path - plugin will loaded and and cfg file will be applied.
+variable set, but empty ('')    - plugin will be loaded, but configuration skipped.
+                                  use can use |TagsLoadConfig| command to load
+                                  configuration file after (Normally, you dont
+                                  need this fonctionnality).
+
+
+|g:fwk_ctags_default_flags|         This is default option for ctags. 
+                                  It will be apply for each project that you generate.
+                                  You can rewrite it.
+Default value is:~
+-R --c++-kinds=+p --ocaml-kinds --fields=+iaS --extra=+q
+
+|g:fwk_ctags_default_tags|          This is default tags for vim set |tags| option.
+                                  Set it if you want add tags constant path.
+                                  It will be added before operation 
+                                  'switch ctags project'. By default is empty.
+
+
+|g:fwk_ctags_popup_menu_root_path| prefix in popup menu. you can rewrite it.
+Default value is:~
+PopUp.&Tags
+
+
+|g:fwk_ctags_map_refresh_config|   map for refresh current config file conbination
+Default value is:~
+\tgcr
+
+|g:fwk_ctags_map_open_curr_config| map to open current config file
+Default value is:~
+\tgcO
+
+
+|g:fwk_ctags_gen_sup_map| default prefix for generate map
+Default value is:~
+'1'
+
+|g:fwk_ctags_set_sup_map| default prefix for set map 
+Default value is:~
+'2'
+
+
+
+==============================================================================
+FUNCTIONS                                                    *fwk_ctags_func*
+
+This is additional API (normally, you dont need it):~
+
+|TagsLoadConfig| {config_file}   Function to load config file manually.
+                               After load, menus and maps from previous cfg file
+                               will be remove.
+
+|TagsBrowseConfig|               Function to browse config file manually. Like
+                               |TagsLoadConfig| , but with use of vim standart
+                               |browse()|.
+                                
+==============================================================================
+EXEMPLES                                                    *fwk_ctags_exemples*
+
+VIMRC SETTINGS:~
+Exemple 1: simple config in vimrc to start plugin:
+
+>
+ "START FWK_CTAGS PLUGIN
+ let g:fwk_ctags_config_to_load = 'd:\programs\vim\plugin\ctags_config_home_win32.cfg'
+>
+
+Exemple 2: advanced settings in your .vimrc, to start plugin, and uses differents
+config files:
+>
+ "START FWK_CTAGS PLUGIN
+ if has('win32')
+    let g:fwk_ctags_config_to_load = 'd:\programs\vim\plugin\ctags_config_home_win32.cfg'
+ else "linux
+    if hostname() == 'home'
+        let g:fwk_ctags_config_to_load = '/home/sergey/.vim/plugin/ctags_config_home_linux.cfg'
+    else "work 
+        let g:fwk_ctags_config_to_load = '/home/svakulenko/.vim/plugin/ctags_config_work.cfg'
+    endif
+ endif
+<
+
+
+PROJECTS CONFIGS:~
+
+
+ctags_config_home_win32.cfg ~
+--------------------------------------------------------------------
+
+my library project {
+        gen:H:\sources\library
+}    
+
+
+ctags_config_home_linux.cfg~
+--------------------------------------------------------------------
+Home Vim {
+    map:\tg
+    gen:/home/sergey/.vim/vim_extention/vimrc_config
+    gen:/home/sergey/.vim
+}
+
+
+Python Django AppEngine ppdlive {
+    map:\tp
+    set:/usr/lib/python2.7/dist-packages/django
+    gen:/home/sergey/workspace/appEngine/vppdlive/ppdlive
+}
+
+
+ctags_config_work.cfg~
+--------------------------------------------------------------------
+Default ctags for vim distro {
+    map:\tgh
+    gen:/home/svakulenko/.vim/vim_extention/vimrc_config
+    gen:/home/svakulenko/.vim
+}
+
+Netatmo WS Client Java {
+    map:\tgj
+    gen:/home/svakulenko/depots/svn/trunk/apps/Android/eclipse/workspace/WeatherStationClient/src
+}
+
+
+
+Netatmo WS JNI {
+    map:\tgn
+    gen:/home/svakulenko/depots/svn/trunk/generic/iap
+    gen:/home/svakulenko/depots/svn/trunk/apps/Android/eclipse/workspace/WeatherStationClient/jni
+    gen:/home/svakulenko/depots/svn/trunk/generic/netcom
+    gen:/home/svakulenko/depots/svn/trunk/generic/dblib
+    gen:/home/svakulenko/depots/svn/trunk/generic/newlib_tz
+    gen:/home/svakulenko/depots/svn/trunk/apps/iOS/weatherstation/weatherstation/Classes/NAAPI
+}
+
+
+use of the tip from this link http://www.gregsexton.org/2011/04/objective-c-exuberant-ctags-regex
+to work with objective-c code:
+
+Netatmo Ios {
+    map:\tgm
+    gen:/home/svakulenko/depots/svn/trunk/apps/iOS
+    pref:--langdef=objc
+    pref:--langmap=objc:.m.h
+    pref:--regex-objc=/^[[:space:]]*[-+][[:space:]]*\([[:alpha:]]+[[:space:]]*\*?\)[[:space:]]*([[:alnum:]]+):[[:space:]]*\(/\1/m,method/
+    pref:--regex-objc=/^[[:space:]]*[-+][[:space:]]*\([[:alpha:]]+[[:space:]]*\*?\)[[:space:]]*([[:alnum:]]+)[[:space:]]*\{/\1/m,method/
+    pref:--regex-objc=/^[[:space:]]*[-+][[:space:]]*\([[:alpha:]]+[[:space:]]*\*?\)[[:space:]]*([[:alnum:]]+)[[:space:]]*\;/\1/m,method/
+    pref:--regex-objc=/^[[:space:]]*\@property[[:space:]]+.*[[:space:]]+\*?(.*);$/\1/p,property/
+    pref:--regex-objc=/^[[:space:]]*\@implementation[[:space:]]+(.*)$/\1/c,class/
+    pref:--regex-objc=/^[[:space:]]*\@interface[[:space:]]+(.*)[[:space:]]+:.*{/\1/i,interface/
+}        
+
+
+==============================================================================
+FAQ                                                              *fwk_ctags_faq*
+
+    1.1 When I call project hotkey, I got many warnings in output. Why?
+        - Normally, output that you see is generated by original utility ctags.
+        if you see warnings, that is warnings of ctags. To be sure, you can 
+        always test generation of tags manually.
+
+
+==============================================================================
+CHANGES                                                      *fwk_ctags_changes*
+
+
+
+0.6 - share plugin. init upload
+
+
+==============================================================================
+ vim:tw=78:ts=8:ft=help:norl:
+
